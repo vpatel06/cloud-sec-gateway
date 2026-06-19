@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  wireguard:
+    build: .
+    container_name: secure-wg-gateway
+    restart: unless-stopped
+    # Essential network capabilities to alter routing tables, without full root abuse
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    volumes:
+      - ./wireguard_config:/etc/wireguard
+    ports:
+      - "51820:51820/udp"
+    sysctls:
+      - net.ipv4.ip_forward=1

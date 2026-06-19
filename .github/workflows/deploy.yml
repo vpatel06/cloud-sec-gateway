@@ -1,0 +1,38 @@
+name: Deploy Secure WireGuard Gateway
+
+on:
+  push:
+    branches:
+      - main  # Triggers the pipeline automatically when you push to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Execute Remote Deployment via AWS SSM
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=instanceids,Values=i-0620df35f28e95e62" \
+            --comment "Deploying updated WireGuard container stack over SSM" \
+            --parameters '{"commands":[
+              "mkdir -p /home/ubuntu/cloud-sec-gateway/wireguard_config",
+              "echo \x27'"$(cat Dockerfile)"'\x27 > /home/ubuntu/cloud-sec-gateway/Dockerfile",
+              "echo \x27'"$(cat docker-compose.yml)"'\x27 > /home/ubuntu/cloud-sec-gateway/docker-compose.yml",
+              "echo \x27'"$(cat wireguard_config/wg0.conf)"\x27 > /home/ubuntu/cloud-sec-gateway/wireguard_config/wg0.conf",
+              "cd /home/ubuntu/cloud-sec-gateway",
+              "sudo docker compose down || true",
+              "sudo docker compose up -d --build"
+            ]}' \
+            --query "Command.CommandId" \
+            --output text

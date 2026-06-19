@@ -1,0 +1,11 @@
+# Local Terraform directory (contains the massive binaries that crashed the push)
+.terraform/
+
+# Hide local state files containing sensitive deployment info
+*.tfstate
+*.tfstate.backup
+.terraform.tfstate.lock.info
+
+# Ignore local WireGuard raw private keys for security
+wireguard_config/server_private.key
+wireguard_config/server_public.key
