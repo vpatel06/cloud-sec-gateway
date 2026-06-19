@@ -21,10 +21,10 @@ jobs:
 
       - name: Execute Remote Deployment via AWS SSM
         run: |
-          # Read file contents and escape them cleanly for JSON delivery
-          DOCKERFILE_CONTENT=$(cat Dockerfile | jq -aR .)
-          COMPOSE_CONTENT=$(cat docker-compose.yml | jq -aR .)
-          WG_CONTENT=$(cat wireguard_config/wg0.conf | jq -aR .)
+          # Convert configurations into single-line Base64 blobs to prevent JSON breakage
+          DOCKERFILE_B64=$(base64 -w 0 Dockerfile)
+          COMPOSE_B64=$(base64 -w 0 docker-compose.yml)
+          WG_B64=$(base64 -w 0 wireguard_config/wg0.conf)
 
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
@@ -32,9 +32,9 @@ jobs:
             --comment "Deploying updated WireGuard container stack over SSM" \
             --parameters "{\"commands\":[
               \"mkdir -p /home/ubuntu/cloud-sec-gateway/wireguard_config\",
-              \"echo $DOCKERFILE_CONTENT > /home/ubuntu/cloud-sec-gateway/Dockerfile.tmp && jq -r . /home/ubuntu/cloud-sec-gateway/Dockerfile.tmp > /home/ubuntu/cloud-sec-gateway/Dockerfile && rm /home/ubuntu/cloud-sec-gateway/Dockerfile.tmp\",
-              \"echo $COMPOSE_CONTENT > /home/ubuntu/cloud-sec-gateway/compose.tmp && jq -r . /home/ubuntu/cloud-sec-gateway/compose.tmp > /home/ubuntu/cloud-sec-gateway/docker-compose.yml && rm /home/ubuntu/cloud-sec-gateway/compose.tmp\",
-              \"echo $WG_CONTENT > /home/ubuntu/cloud-sec-gateway/wg.tmp && jq -r . /home/ubuntu/cloud-sec-gateway/wg.tmp > /home/ubuntu/cloud-sec-gateway/wireguard_config/wg0.conf && rm /home/ubuntu/cloud-sec-gateway/wg.tmp\",
+              \"echo '$DOCKERFILE_B64' | base64 -d > /home/ubuntu/cloud-sec-gateway/Dockerfile\",
+              \"echo '$COMPOSE_B64' | base64 -d > /home/ubuntu/cloud-sec-gateway/docker-compose.yml\",
+              \"echo '$WG_B64' | base64 -d > /home/ubuntu/cloud-sec-gateway/wireguard_config/wg0.conf\",
               \"cd /home/ubuntu/cloud-sec-gateway\",
               \"sudo docker compose down || true\",
               \"sudo docker compose up -d --build\"
