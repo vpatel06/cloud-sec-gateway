@@ -9,3 +9,5 @@
 # Ignore local WireGuard raw private keys for security
 wireguard_config/server_private.key
 wireguard_config/server_public.key
+
+*.key
