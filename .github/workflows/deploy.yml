@@ -3,7 +3,7 @@ name: Deploy Secure WireGuard Gateway
 on:
   push:
     branches:
-      - main  # Triggers the pipeline automatically when you push to the main branch
+      - main
 
 jobs:
   deploy:
@@ -21,18 +21,23 @@ jobs:
 
       - name: Execute Remote Deployment via AWS SSM
         run: |
+          # Read file contents and escape them cleanly for JSON delivery
+          DOCKERFILE_CONTENT=$(cat Dockerfile | jq -aR .)
+          COMPOSE_CONTENT=$(cat docker-compose.yml | jq -aR .)
+          WG_CONTENT=$(cat wireguard_config/wg0.conf | jq -aR .)
+
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "Key=instanceids,Values=i-0620df35f28e95e62" \
             --comment "Deploying updated WireGuard container stack over SSM" \
-            --parameters '{"commands":[
-              "mkdir -p /home/ubuntu/cloud-sec-gateway/wireguard_config",
-              "echo \x27'"$(cat Dockerfile)"'\x27 > /home/ubuntu/cloud-sec-gateway/Dockerfile",
-              "echo \x27'"$(cat docker-compose.yml)"'\x27 > /home/ubuntu/cloud-sec-gateway/docker-compose.yml",
-              "echo \x27'"$(cat wireguard_config/wg0.conf)"\x27 > /home/ubuntu/cloud-sec-gateway/wireguard_config/wg0.conf",
-              "cd /home/ubuntu/cloud-sec-gateway",
-              "sudo docker compose down || true",
-              "sudo docker compose up -d --build"
-            ]}' \
+            --parameters "{\"commands\":[
+              \"mkdir -p /home/ubuntu/cloud-sec-gateway/wireguard_config\",
+              \"echo $DOCKERFILE_CONTENT > /home/ubuntu/cloud-sec-gateway/Dockerfile.tmp && jq -r . /home/ubuntu/cloud-sec-gateway/Dockerfile.tmp > /home/ubuntu/cloud-sec-gateway/Dockerfile && rm /home/ubuntu/cloud-sec-gateway/Dockerfile.tmp\",
+              \"echo $COMPOSE_CONTENT > /home/ubuntu/cloud-sec-gateway/compose.tmp && jq -r . /home/ubuntu/cloud-sec-gateway/compose.tmp > /home/ubuntu/cloud-sec-gateway/docker-compose.yml && rm /home/ubuntu/cloud-sec-gateway/compose.tmp\",
+              \"echo $WG_CONTENT > /home/ubuntu/cloud-sec-gateway/wg.tmp && jq -r . /home/ubuntu/cloud-sec-gateway/wg.tmp > /home/ubuntu/cloud-sec-gateway/wireguard_config/wg0.conf && rm /home/ubuntu/cloud-sec-gateway/wg.tmp\",
+              \"cd /home/ubuntu/cloud-sec-gateway\",
+              \"sudo docker compose down || true\",
+              \"sudo docker compose up -d --build\"
+            ]}" \
             --query "Command.CommandId" \
             --output text
