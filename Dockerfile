@@ -10,5 +10,5 @@ EXPOSE 51820/udp
 # Set the working directory for keys and configs
 WORKDIR /etc/wireguard
 
-# Start WireGuard in the foreground so Docker can monitor the process
-CMD ["wg-quick", "up", "wg0"]
+# Start WireGuard and keep the container alive by watching a null stream
+CMD ["sh", "-c", "wg-quick up wg0 && tail -f /dev/null"]
