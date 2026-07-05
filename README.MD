@@ -92,6 +92,10 @@ cloud-sec-gateway/
 ├── docker-compose.yml   # WireGuard service definition
 ├── telemetry_collector.py   # Pulls `wg show` stats → uploads to S3
 ├── wireguard-monitor.PY     # Lambda: S3 → CloudWatch Logs
+├── docs/                # Architecture validation & monitoring artifacts
+│   ├── architecture/    # Network & IAM configuration screenshots
+│   ├── monitoring/      # CloudWatch, S3, and Lambda operational dashboards
+│   └── troubleshooting/ # Validation references for security group auditing
 └── .gitignore
 ```
 
