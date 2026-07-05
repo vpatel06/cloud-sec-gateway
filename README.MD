@@ -145,9 +145,3 @@ docker compose up -d --build
 - Actual alerting instead of just CloudWatch logs (dropped handshake should trigger a notification, not just a log line)
 - Stop hardcoding the S3 bucket name in the script
 - A `terraform.tfvars.example` so the required variables aren't a guessing game
-
----
-
-## License
-
-Add your preferred license here (MIT, Apache 2.0, etc.).
